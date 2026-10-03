@@ -1,0 +1,22 @@
+<div class="app-shell">
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="Vihaar Map Tracker home" (click)="activeView.set('map')">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M16 3.5c-5.2 0-9.4 4.2-9.4 9.4 0 6.3 9.4 15.6 9.4 15.6s9.4-9.3 9.4-15.6c0-5.2-4.2-9.4-9.4-9.4Z" fill="currentColor"/><circle cx="16" cy="12.8" r="3.4" fill="white"/></svg></span>
+      <span><strong>Vihaar</strong><small>MAP TRACKER</small></span>
+    </a>
+    <nav class="top-nav" aria-label="Main navigation">
+      <button type="button" class="nav-link" [class.selected]="activeView() === 'map'" (click)="activeView.set('map')"><span class="nav-icon">⌖</span> Live map</button>
+      <button type="button" class="nav-link" [class.selected]="activeView() === 'checkin'" (click)="activeView.set('checkin')"><span class="nav-icon">＋</span> Volunteer check-in</button>
+    </nav>
+    <div class="live-badge"><span></span> LIVE UPDATES</div>
+  </header>
+
+  <main id="top" class="main-content">
+    @if (activeView() === 'map') {
+      <app-map-dashboard />
+    } @else {
+      <app-volunteer-checkin />
+    }
+  </main>
+  <footer class="site-footer"><span>With reverence for every step.</span><span>Community powered · Real-time updates</span></footer>
+</div>

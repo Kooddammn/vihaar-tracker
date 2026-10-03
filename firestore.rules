@@ -1,0 +1,83 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function volunteerPath(phoneNumber) {
+      return /databases/$(database)/documents/volunteers/$(phoneNumber);
+    }
+
+    function isAuthorizedVolunteer() {
+      return request.auth != null
+        && request.auth.token.phone_number is string
+        && exists(volunteerPath(request.auth.token.phone_number))
+        && get(volunteerPath(request.auth.token.phone_number)).data.get('active', false) == true
+        && get(volunteerPath(request.auth.token.phone_number)).data.get('displayName', '') == request.resource.data.volunteerName;
+    }
+
+    function hasValidTrackFields(data) {
+      return data.keys().hasAll([
+          'santName',
+          'status',
+          'currentLocationName',
+          'nextDestinationName',
+          'volunteerName',
+          'lastUpdatedAt',
+          'coordinates'
+        ])
+        && data.keys().hasOnly([
+          'santName',
+          'status',
+          'currentLocationName',
+          'nextDestinationName',
+          'volunteerName',
+          'lastUpdatedAt',
+          'coordinates'
+        ])
+        && data.santName is string
+        && data.santName.size() >= 3
+        && data.santName.size() <= 120
+        && data.status is string
+        && data.status in ['Walking', 'Resting', 'Pravachan', 'Completed']
+        && data.currentLocationName is string
+        && data.currentLocationName.size() > 0
+        && data.currentLocationName.size() <= 160
+        && data.nextDestinationName is string
+        && data.nextDestinationName.size() <= 160
+        && data.volunteerName is string
+        && data.volunteerName.size() > 0
+        && data.volunteerName.size() <= 100
+        && data.lastUpdatedAt is string
+        && data.lastUpdatedAt.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$')
+        && data.coordinates is map
+        && data.coordinates.keys().hasAll(['latitude', 'longitude'])
+        && data.coordinates.keys().hasOnly(['latitude', 'longitude'])
+        && data.coordinates.latitude is number
+        && data.coordinates.latitude >= -90
+        && data.coordinates.latitude <= 90
+        && data.coordinates.longitude is number
+        && data.coordinates.longitude >= -180
+        && data.coordinates.longitude <= 180;
+    }
+
+    match /vihaar_tracks/{trackId} {
+      // The public dashboard reads the complete journey list.
+      allow read: if true;
+
+      // Volunteers may append valid updates. Updates and deletes are denied so
+      // submitted reports cannot be silently altered or removed by clients.
+      allow create: if isAuthorizedVolunteer()
+        && hasValidTrackFields(request.resource.data);
+      allow update, delete: if false;
+    }
+
+    // Volunteer allowlist records are managed only through trusted admin tools.
+    match /volunteers/{volunteerPhoneNumber} {
+      allow read, write: if false;
+    }
+
+    // Deny all other documents unless another explicit match permits access.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

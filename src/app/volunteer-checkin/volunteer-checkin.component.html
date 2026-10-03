@@ -1,0 +1,28 @@
+<section class="checkin-page">
+  <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> COMMUNITY CONTRIBUTION</div><h1>Share a <em>journey update.</em></h1><p class="intro">A thoughtful check-in helps the community follow each sacred vihaar.</p></div><div class="privacy-note"><span>✧</span> Shared with care</div></div>
+
+  @if (successMessage()) { <div class="feedback success" role="status"><span class="feedback-icon">✓</span><div><strong>Update shared</strong><p>{{ successMessage() }}</p></div><button type="button" aria-label="Dismiss success message" (click)="successMessage.set('')">×</button></div> }
+  @if (errorMessage()) { <div class="feedback error" role="alert"><span class="feedback-icon">!</span><div><strong>Unable to share update</strong><p>{{ errorMessage() }}</p></div><button type="button" aria-label="Dismiss error message" (click)="errorMessage.set('')">×</button></div> }
+
+  <form class="checkin-card" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="form-title"><div class="form-title-icon">✎</div><div><h2>Journey details</h2><p>Enter the latest information you have.</p></div><span class="required-note"><i></i> Required field</span></div>
+    <div class="form-body">
+      <div class="field-grid">
+        <div class="field"><label for="santName">Sant's name <span>*</span></label><input id="santName" type="text" formControlName="santName" placeholder="e.g. Pujya Acharya Shri" autocomplete="name" [class.invalid-input]="showError('santName')"><small class="field-hint">Please enter at least 3 characters.</small>@if (showError('santName')) { <small class="field-error">{{ form.controls.santName.hasError('minlength') ? 'Please enter at least 3 characters.' : 'Sant’s name is required.' }}</small> }</div>
+        <div class="field"><label for="status">Current status <span>*</span></label><div class="select-wrap"><select id="status" formControlName="status" [class.invalid-input]="showError('status')"><option value="" disabled>Select a status</option><option value="Walking">Walking</option><option value="Resting">Resting</option><option value="Pravachan">Pravachan</option><option value="Completed">Completed</option></select><span>⌄</span></div>@if (showError('status')) { <small class="field-error">Please choose a status.</small> }</div>
+        <div class="field"><label for="currentLocationName">Current halt / location <span>*</span></label><input id="currentLocationName" type="text" formControlName="currentLocationName" placeholder="Town, village or landmark" [class.invalid-input]="showError('currentLocationName')">@if (showError('currentLocationName')) { <small class="field-error">Current location is required.</small> }</div>
+        <div class="field"><label for="nextDestinationName">Next destination <span class="optional">OPTIONAL</span></label><input id="nextDestinationName" type="text" formControlName="nextDestinationName" placeholder="Where is the journey headed next?"></div>
+        <div class="field full-field"><label for="volunteerName">Your name <span>*</span></label><input id="volunteerName" type="text" formControlName="volunteerName" placeholder="Enter your name" autocomplete="name" [class.invalid-input]="showError('volunteerName')">@if (showError('volunteerName')) { <small class="field-error">Your name is required.</small> }</div>
+        <div class="field full-field"><label for="mobileNumber">Mobile number <span>*</span></label><input id="mobileNumber" type="tel" formControlName="mobileNumber" placeholder="+91 98765 43210" autocomplete="tel" [class.invalid-input]="showError('mobileNumber')"><small class="field-hint">Enter an international number. Indian 10-digit numbers are accepted as +91. This number is not sent with the public journey update; phone verification can be added later.</small>@if (showError('mobileNumber')) { <small class="field-error">Enter a valid mobile number with its country code.</small> }</div>
+      </div>
+
+      <div class="location-section"><div class="location-title"><div><h3>Map location</h3><p>Pinpoint where this update was shared.</p></div><button type="button" class="gps-button" (click)="useCurrentLocation()"><span>⌖</span> Use my current location</button></div>
+        @if (locationMessage()) { <p class="location-message" role="status">{{ locationMessage() }}</p> }
+        <div class="field-grid coordinate-grid"><div class="field"><label for="latitude">Latitude <span>*</span></label><input id="latitude" type="number" formControlName="latitude" min="-90" max="90" step="any" placeholder="e.g. 23.0225" [class.invalid-input]="showError('latitude')">@if (showError('latitude')) { <small class="field-error">Enter a latitude between −90 and 90.</small> }</div><div class="field"><label for="longitude">Longitude <span>*</span></label><input id="longitude" type="number" formControlName="longitude" min="-180" max="180" step="any" placeholder="e.g. 72.5714" [class.invalid-input]="showError('longitude')">@if (showError('longitude')) { <small class="field-error">Enter a longitude between −180 and 180.</small> }</div></div>
+        <div class="coordinate-note"><span>ⓘ</span> GPS coordinates help place the update accurately on the community map.</div>
+      </div>
+    </div>
+    <div class="form-actions"><p><span>✧</span> Thank you for helping others follow the vihaar.</p><button class="submit-button" type="submit" [disabled]="saving()"><span>{{ saving() ? 'Sharing update…' : 'Share journey update' }}</span><span aria-hidden="true">→</span></button></div>
+  </form>
+  <div class="trust-note"><span class="trust-icon">♡</span><span>Every update is shared by a volunteer. Please help keep the community informed with thoughtful, timely details.</span></div>
+</section>

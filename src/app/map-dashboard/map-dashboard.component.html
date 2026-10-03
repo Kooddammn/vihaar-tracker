@@ -1,0 +1,91 @@
+<section class="dashboard">
+  <div class="page-heading">
+    <div>
+      <div class="eyebrow"><span class="eyebrow-line"></span> JOURNEY OVERVIEW</div>
+      <h1>Every step, <em>inspired.</em></h1>
+      <p class="intro">Follow the sacred journeys of Jain Sants, shared by our community.</p>
+    </div>
+    <div class="sync-chip"><span class="sync-dot"></span> Live community updates</div>
+  </div>
+
+  <ng-container *ngIf="(tracks$ | async) as tracks">
+    <div class="map-card">
+      <div class="map-heading">
+        <div><span class="section-kicker">THE JOURNEY</span><h2>Live vihaar map</h2></div>
+        <div class="map-legend">
+          <span><i class="legend-dot walking"></i> Walking</span>
+          <span><i class="legend-dot resting"></i> Resting</span>
+          <span><i class="legend-dot other"></i> Pravachan</span>
+        </div>
+      </div>
+
+      <div class="map-filters" role="search" aria-label="Filter journey updates">
+        <label class="filter-field">
+          <span>Sant name</span>
+          <input type="search" [value]="santNameFilter()" (input)="setSantNameFilter($event)" placeholder="Search by Sant name" aria-label="Filter by Sant name">
+        </label>
+        <label class="filter-field">
+          <span>Vihaar status</span>
+          <select [value]="statusFilter()" (change)="setStatusFilter($event)" aria-label="Filter by vihaar status">
+            <option value="">All statuses</option>
+            <option value="Walking">Walking</option>
+            <option value="Resting">Resting</option>
+            <option value="Pravachan">Pravachan</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </label>
+        <span class="filter-count" aria-live="polite">{{ filteredTracks(tracks).length }} of {{ tracks.length }} updates</span>
+        <button *ngIf="hasActiveFilters()" type="button" class="clear-filters" (click)="clearFilters()">Clear filters</button>
+      </div>
+
+      <div #mapCanvas class="map-container" [class.dragging]="isDragging()" role="region" aria-label="OpenStreetMap showing live vihaar locations" (pointerdown)="startPan($event)" (pointermove)="pan($event)" (pointerup)="endPan()" (pointercancel)="endPan()">
+        <div class="tile-layer" aria-hidden="true">
+          <img *ngFor="let tile of tiles()" class="map-tile" [src]="tile.url" [style.left.px]="tile.left" [style.top.px]="tile.top" alt="" draggable="false">
+        </div>
+        <div class="marker-layer">
+          <ng-container *ngFor="let track of filteredTracks(tracks)">
+            <button *ngIf="track.status !== 'Completed'" type="button" class="track-marker" [ngClass]="markerClass(track.status)" [class.selected]="activeTrackId() === trackKey(track)" [style.left.px]="markerPosition(track).left" [style.top.px]="markerPosition(track).top" [attr.aria-label]="markerTitle(track)" [attr.aria-describedby]="'track-tooltip-' + trackKey(track)" [attr.aria-expanded]="activeTrackId() === trackKey(track)" (click)="toggleTrackDetails(track, $event)">
+              <span class="marker-dot" aria-hidden="true"></span>
+              <span class="marker-tooltip" [id]="'track-tooltip-' + trackKey(track)" role="tooltip">
+                <strong class="tooltip-name">{{ track.santName }}</strong>
+                <span class="tooltip-status" [ngClass]="markerClass(track.status)">{{ track.status }}</span>
+                <span class="tooltip-row"><small>Current halt</small>{{ track.currentLocationName }}</span>
+                <span class="tooltip-row"><small>Next destination</small>{{ track.nextDestinationName || 'Not specified' }}</span>
+                <span class="tooltip-row"><small>Updated</small>{{ track.lastUpdatedAt | date:'dd MMM yyyy · h:mm a' }}</span>
+                <span class="tooltip-volunteer">Shared by {{ track.volunteerName }}</span>
+              </span>
+            </button>
+          </ng-container>
+        </div>
+        <div *ngIf="(tracks.length > 0 && filteredTracks(tracks).length === 0) || (statusFilter() === 'Completed' && filteredTracks(tracks).length > 0)" class="map-empty" role="status">
+          {{ filteredTracks(tracks).length === 0 ? 'No journey updates match these filters.' : 'Completed journeys remain in the update list and have no active map marker.' }}
+        </div>
+        <div class="map-controls" aria-label="Map zoom controls">
+          <button type="button" aria-label="Zoom in" title="Zoom in" (click)="zoomIn($event)">+</button>
+          <button type="button" aria-label="Zoom out" title="Zoom out" (click)="zoomOut($event)">−</button>
+        </div>
+        <div class="map-attribution"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a></div>
+      </div>
+      <div class="map-footnote"><span class="pin-mini">⌖</span> Locations are shared by community volunteers</div>
+    </div>
+
+    <section class="journeys-section">
+      <div class="list-heading">
+        <div><span class="section-kicker">COMMUNITY SHARED</span><h2>Journey updates</h2></div>
+        <span class="updated-label"><span class="sync-dot"></span> Updates in real time</span>
+      </div>
+      <div class="journey-grid">
+        <article class="journey-card" *ngFor="let track of filteredTracks(tracks)">
+          <div class="card-top"><div class="sant-avatar">{{ track.santName.charAt(0) }}</div><div class="sant-details"><h3>{{ track.santName }}</h3><span>Reported by {{ track.volunteerName }}</span></div><span class="status-pill" [class.walking]="track.status === 'Walking'" [class.resting]="track.status === 'Resting'" [class.pravachan]="track.status === 'Pravachan'" [class.completed]="track.status === 'Completed'"><i></i>{{ track.status }}</span></div>
+          <div class="route-row"><div class="route-stop"><span class="route-symbol current-symbol">●</span><div><small>CURRENT HALT</small><strong>{{ track.currentLocationName }}</strong></div></div><div class="route-connector"></div><div class="route-stop"><span class="route-symbol target-symbol">◇</span><div><small>NEXT DESTINATION</small><strong>{{ track.nextDestinationName || 'Not specified' }}</strong></div></div></div>
+          <div class="card-footer"><span>LAST UPDATED</span><time>{{ track.lastUpdatedAt | date:'dd MMM yyyy · h:mm a' }}</time></div>
+        </article>
+        <div class="empty-state" *ngIf="filteredTracks(tracks).length === 0">
+          <span class="empty-icon">⌖</span>
+          <h3>{{ hasActiveFilters() ? 'No matching journeys' : 'The journey begins here' }}</h3>
+          <p>{{ hasActiveFilters() ? 'Try adjusting the Sant name or status filters.' : 'No updates have been shared yet. Be the first to add a community check-in.' }}</p>
+        </div>
+      </div>
+    </section>
+  </ng-container>
+</section>

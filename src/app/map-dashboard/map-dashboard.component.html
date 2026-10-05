@@ -42,19 +42,24 @@
         <div class="tile-layer" aria-hidden="true">
           <img *ngFor="let tile of tiles()" class="map-tile" [src]="tile.url" [style.left.px]="tile.left" [style.top.px]="tile.top" alt="" draggable="false">
         </div>
+        <svg class="india-mask" [attr.viewBox]="'0 0 ' + mapWidth() + ' ' + mapHeight()" preserveAspectRatio="none" aria-hidden="true">
+          <path [attr.d]="indiaOutsideMaskPath()" fill="#edf2f5" fill-rule="evenodd"></path>
+          <path [attr.d]="indiaBoundaryPath()" fill="none" stroke="#4f8064" stroke-width="1.5" stroke-linejoin="round"></path>
+        </svg>
         <div class="marker-layer">
           <ng-container *ngFor="let track of filteredTracks(tracks)">
-            <button *ngIf="track.status !== 'Completed'" type="button" class="track-marker" [ngClass]="markerClass(track.status)" [class.selected]="activeTrackId() === trackKey(track)" [style.left.px]="markerPosition(track).left" [style.top.px]="markerPosition(track).top" [attr.aria-label]="markerTitle(track)" [attr.aria-describedby]="'track-tooltip-' + trackKey(track)" [attr.aria-expanded]="activeTrackId() === trackKey(track)" (click)="toggleTrackDetails(track, $event)">
-              <span class="marker-dot" aria-hidden="true"></span>
-              <span class="marker-tooltip" [id]="'track-tooltip-' + trackKey(track)" role="tooltip">
+            <div *ngIf="track.status !== 'Completed'" class="track-marker" [ngClass]="markerClass(track.status)" [class.selected]="activeTrackId() === trackKey(track)" [style.left.px]="markerPosition(track).left" [style.top.px]="markerPosition(track).top">
+              <button type="button" class="marker-dot" [attr.aria-label]="markerTitle(track)" [attr.aria-controls]="'track-tooltip-' + trackKey(track)" [attr.aria-expanded]="activeTrackId() === trackKey(track)" (click)="toggleTrackDetails(track, $event)"></button>
+              <span class="marker-tooltip" [id]="'track-tooltip-' + trackKey(track)" role="group" [attr.aria-label]="'Journey details for ' + track.santName">
                 <strong class="tooltip-name">{{ track.santName }}</strong>
                 <span class="tooltip-status" [ngClass]="markerClass(track.status)">{{ track.status }}</span>
                 <span class="tooltip-row"><small>Current halt</small>{{ track.currentLocationName }}</span>
                 <span class="tooltip-row"><small>Next destination</small>{{ track.nextDestinationName || 'Not specified' }}</span>
                 <span class="tooltip-row"><small>Updated</small>{{ track.lastUpdatedAt | date:'dd MMM yyyy · h:mm a' }}</span>
                 <span class="tooltip-volunteer">Shared by {{ track.volunteerName }}</span>
+                <button type="button" class="timeline-open-button" (click)="showJourneyTimeline(track, $event)">View journey timeline <span aria-hidden="true">→</span></button>
               </span>
-            </button>
+            </div>
           </ng-container>
         </div>
         <div *ngIf="(tracks.length > 0 && filteredTracks(tracks).length === 0) || (statusFilter() === 'Completed' && filteredTracks(tracks).length > 0)" class="map-empty" role="status">
@@ -68,6 +73,38 @@
       </div>
       <div class="map-footnote"><span class="pin-mini">⌖</span> Locations are shared by community volunteers</div>
     </div>
+
+    <section id="journey-timeline" class="timeline-section" tabindex="-1" *ngIf="selectedTimelineSant() as santName">
+      <div class="timeline-section-heading">
+        <div>
+          <span class="section-kicker">JOURNEY HISTORY</span>
+          <h2>{{ santName }} timeline</h2>
+          <p>Check-ins arranged from earliest to latest.</p>
+        </div>
+        <button type="button" class="timeline-close-button" (click)="closeJourneyTimeline()" aria-label="Close journey timeline">×</button>
+      </div>
+
+      <article class="timeline-group">
+        <div class="timeline-sant-heading">
+          <span class="sant-avatar">{{ santName.charAt(0) }}</span>
+          <div><h3>{{ santName }}</h3><span>{{ journeyTimeline(tracks).length }} journey updates</span></div>
+        </div>
+        <ol class="timeline-list">
+          <li class="timeline-event" *ngFor="let update of journeyTimeline(tracks); let last = last" [class.last-event]="last">
+            <span class="timeline-node" [class.walking]="update.status === 'Walking'" [class.resting]="update.status === 'Resting'" [class.completed]="update.status === 'Completed'"></span>
+            <div class="timeline-event-card">
+              <div class="timeline-event-top">
+                <span class="timeline-status" [class.walking]="update.status === 'Walking'" [class.resting]="update.status === 'Resting'" [class.pravachan]="update.status === 'Pravachan'" [class.completed]="update.status === 'Completed'">{{ update.status }}</span>
+                <time>{{ update.lastUpdatedAt | date:'dd MMM yyyy · h:mm a' }}</time>
+              </div>
+              <p class="timeline-location"><strong>{{ update.currentLocationName }}</strong><span>Current halt</span></p>
+              <p class="timeline-destination"><span>Next destination</span>{{ update.nextDestinationName || 'Not specified' }}</p>
+              <p class="timeline-volunteer">Shared by {{ update.volunteerName }}</p>
+            </div>
+          </li>
+        </ol>
+      </article>
+    </section>
 
     <section class="journeys-section">
       <div class="list-heading">

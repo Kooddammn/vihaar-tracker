@@ -19,9 +19,12 @@ export class VolunteerCheckinComponent {
   readonly successMessage = signal('');
   readonly errorMessage = signal('');
   readonly locationMessage = signal('');
+  readonly santNames = signal<string[]>([]);
+  readonly santNameDraft = signal('');
+  readonly santNameDraftError = signal('');
 
   readonly form = this.formBuilder.group({
-    santName: ['', [Validators.required, Validators.minLength(3)]],
+    santName: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(120)]],
     status: ['', Validators.required],
     currentLocationName: ['', Validators.required],
     nextDestinationName: [''],
@@ -30,6 +33,55 @@ export class VolunteerCheckinComponent {
     latitude: new FormControl<number | null>(null, [Validators.required, Validators.min(-90), Validators.max(90)]),
     longitude: new FormControl<number | null>(null, [Validators.required, Validators.min(-180), Validators.max(180)]),
   });
+
+  updateSantNameDraft(event: Event): void {
+    this.santNameDraft.set((event.target as HTMLInputElement).value);
+    this.santNameDraftError.set('');
+  }
+
+  addSantNameFromKeyboard(event: KeyboardEvent): void {
+    event.preventDefault();
+    this.addSantName();
+  }
+
+  addSantName(): void {
+    const name = this.santNameDraft().trim().replace(/\s+/g, ' ');
+    if (!name) {
+      this.santNameDraftError.set('Enter a Sant name first.');
+      return;
+    }
+    if (name.length < 3) {
+      this.santNameDraftError.set('Each Sant name must be at least 3 characters.');
+      return;
+    }
+    if (name.includes(',')) {
+      this.santNameDraftError.set('Add one Sant at a time; commas are used to separate the group.');
+      return;
+    }
+    if (this.santNames().some((existing) => existing.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+      this.santNameDraftError.set('That Sant is already in this group.');
+      return;
+    }
+
+    const nextNames = [...this.santNames(), name];
+    const groupName = nextNames.join(', ');
+    if (groupName.length > 120) {
+      this.santNameDraftError.set('The group name must fit within 120 characters.');
+      return;
+    }
+    this.santNames.set(nextNames);
+    this.form.controls.santName.setValue(groupName);
+    this.form.controls.santName.markAsTouched();
+    this.santNameDraft.set('');
+    this.santNameDraftError.set('');
+  }
+
+  removeSantName(nameToRemove: string): void {
+    const nextNames = this.santNames().filter((name) => name !== nameToRemove);
+    this.santNames.set(nextNames);
+    this.form.controls.santName.setValue(nextNames.join(', '));
+    this.form.controls.santName.markAsTouched();
+  }
 
   useCurrentLocation(): void {
     this.locationMessage.set('');
@@ -61,6 +113,10 @@ export class VolunteerCheckinComponent {
     this.submitted.set(true);
     this.successMessage.set('');
     this.errorMessage.set('');
+    if (this.santNameDraft().trim()) {
+      this.addSantName();
+      if (this.santNameDraft().trim()) return;
+    }
     if (this.form.invalid || this.saving()) {
       this.form.markAllAsTouched();
       return;
@@ -83,6 +139,9 @@ export class VolunteerCheckinComponent {
         volunteerName: '', mobileNumber: '', latitude: null, longitude: null,
       });
       this.submitted.set(false);
+      this.santNames.set([]);
+      this.santNameDraft.set('');
+      this.santNameDraftError.set('');
       this.locationMessage.set('');
       this.successMessage.set('Thank you. The journey update has been shared.');
       setTimeout(() => this.successMessage.set(''), 5000);

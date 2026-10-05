@@ -8,7 +8,23 @@
     <div class="form-title"><div class="form-title-icon">✎</div><div><h2>Journey details</h2><p>Enter the latest information you have.</p></div><span class="required-note"><i></i> Required field</span></div>
     <div class="form-body">
       <div class="field-grid">
-        <div class="field"><label for="santName">Sant's name <span>*</span></label><input id="santName" type="text" formControlName="santName" placeholder="e.g. Pujya Acharya Shri" autocomplete="name" [class.invalid-input]="showError('santName')"><small class="field-hint">Please enter at least 3 characters.</small>@if (showError('santName')) { <small class="field-error">{{ form.controls.santName.hasError('minlength') ? 'Please enter at least 3 characters.' : 'Sant’s name is required.' }}</small> }</div>
+        <div class="field full-field sant-group-field">
+          <label for="santNameDraft">Sant name(s) <span>*</span></label>
+          <div class="sant-name-entry">
+            <input id="santNameDraft" type="text" [value]="santNameDraft()" (input)="updateSantNameDraft($event)" (keydown.enter)="addSantNameFromKeyboard($event)" placeholder="e.g. Pujya Acharya Shri" autocomplete="off" [class.invalid-input]="santNameDraftError() || (santNames().length === 0 && showError('santName'))">
+            <button type="button" class="add-sant-button" (click)="addSantName()">Add Sant</button>
+          </div>
+          @if (santNames().length) {
+            <div class="sant-chips" aria-label="Sants in this group">
+              @for (name of santNames(); track name) {
+                <span class="sant-chip">{{ name }}<button type="button" [attr.aria-label]="'Remove ' + name" (click)="removeSantName(name)">×</button></span>
+              }
+            </div>
+          }
+          <small class="field-hint">Add each Sant separately. They’ll be published together as one traveling group.</small>
+          @if (santNameDraftError()) { <small class="field-error">{{ santNameDraftError() }}</small> }
+          @if (santNames().length === 0 && showError('santName')) { <small class="field-error">Add at least one Sant name (3 characters minimum).</small> }
+        </div>
         <div class="field"><label for="status">Current status <span>*</span></label><div class="select-wrap"><select id="status" formControlName="status" [class.invalid-input]="showError('status')"><option value="" disabled>Select a status</option><option value="Walking">Walking</option><option value="Resting">Resting</option><option value="Pravachan">Pravachan</option><option value="Completed">Completed</option></select><span>⌄</span></div>@if (showError('status')) { <small class="field-error">Please choose a status.</small> }</div>
         <div class="field"><label for="currentLocationName">Current halt / location <span>*</span></label><input id="currentLocationName" type="text" formControlName="currentLocationName" placeholder="Town, village or landmark" [class.invalid-input]="showError('currentLocationName')">@if (showError('currentLocationName')) { <small class="field-error">Current location is required.</small> }</div>
         <div class="field"><label for="nextDestinationName">Next destination <span class="optional">OPTIONAL</span></label><input id="nextDestinationName" type="text" formControlName="nextDestinationName" placeholder="Where is the journey headed next?"></div>
